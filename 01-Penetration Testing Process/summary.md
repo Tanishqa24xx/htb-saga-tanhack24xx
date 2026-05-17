@@ -1,6 +1,12 @@
-This module introduced foundational cybersecurity concepts such as:
-- What penetration testing is
-- The difference between red, blue, and purple teams
-- The phases of a penetration test
-- Basic security terminology
-- Ethical and legal considerations
+This module walked through the full penetration testing process and broke down each phase with simple examples. It covered the overall flow, what happens in each stage, and the theory behind how a real engagement works.
+
+We went through:
+- The penetration testing process diagram and how everything connects
+- Information gathering and recon loops
+- Vulnerability assessment
+- Exploitation, post‑exploitation, lateral movement, privilege escalation
+- The different documents involved (pre‑engagement, NDA, scope, PoC, post‑engagement)
+- Legal and regulatory considerations
+
+Overall, it was a theory-heavy module focused on understanding the structure of a proper pentest.
+
