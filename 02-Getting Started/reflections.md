@@ -12,4 +12,6 @@
   - Affects Windows systems using SMBv1.
   - Was leaked and used in major cyberattacks like WannaCry and Petya.
 - Understanding how EternalBlue was developed, leaked, and weaponized gave me context on real‑world impact.
-
+- GoBuster is another tool I didn’t know that is used for web directory/file enumeration, DNS subdomain discovery, virtual host detection, cloud storage enumeration, TFTP file discovery, and custom fuzzing.  
+- Different ways we can use the web enumeration techniques.  
+- In the Public Exploit exercise, I was made to think critically and not just use things as they are given. I learnt how one thing can be used differently based on analysis. Approaches are different for every task. I was able to dig deep into web enumeration and learnt what to look for.
