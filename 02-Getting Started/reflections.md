@@ -15,3 +15,5 @@
 - GoBuster is another tool I didn’t know that is used for web directory/file enumeration, DNS subdomain discovery, virtual host detection, cloud storage enumeration, TFTP file discovery, and custom fuzzing.  
 - Different ways we can use the web enumeration techniques.  
 - In the Public Exploit exercise, I was made to think critically and not just use things as they are given. I learnt how one thing can be used differently based on analysis. Approaches are different for every task. I was able to dig deep into web enumeration and learnt what to look for.
+- In the privilege escalation exercise, I learnt that nothing goes according to the book. I have to navigate smartly to find weaknesses and get the flag.
+- The `bash -c` command was new to me — it allowed me to read a file as an unprivileged user.
