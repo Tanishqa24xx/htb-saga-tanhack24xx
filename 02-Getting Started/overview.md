@@ -228,6 +228,37 @@ Projects/
     - If the compromised host reboots, the web shell remains.
     - Accessible anytime as long as the file stays in place.
 
+- **Privilege Escalation**:
+  - Linux script from PEASS called LinPEAS: `./linpeas.sh`
+  - Server running old OS — look for kernel vulnerabilities.
+  - Kernel exploits cause system instability — needs great care before running on production systems.
+  - Look for vulnerable installed software:
+    - Linux: `dpkg -l`
+    - Windows: look at `C:\Program Files`
+  - Check sudo privileges: `sudo -l`
+    - `(ALL : ALL) ALL` — run all commands with sudo.
+    - `(user : user) NOPASSWD: /bin/echo` — `/bin/echo` can be executed without a password; `user` means we can run sudo as that user and not as root.
+  - Switch to root user: `sudo su -`
+  - Run command as another user: `sudo -u user /bin/echo Hello World!`
+  - Take advantage of scheduled tasks:
+    - Add new scheduled tasks/cron jobs (write with reverse shell):
+      - `/etc/crontab`
+      - `/etc/cron.d`
+      - `/var/spool/cron/crontabs/root`
+    - Trick them into executing malicious software.
+  - Exposed credentials — look in: configuration files, log files, `bash_history` (Linux), `PSReadLine` (Windows).
+  - SSH Keys:
+    - With read access, find private SSH keys at `/home/user/.ssh/id_rsa` or `/root/.ssh/id_rsa`
+    - Read the `/root/.ssh/` directory.
+    - Read the `id_rsa` file.
+    - Copy: `vim id_rsa`
+    - Change file permissions: `chmod 600 id_rsa`
+    - Login: `ssh root@10.10.10.10 -i id_rsa`
+    - With write access to user's `/.ssh/` directory — place public key at `/home/user/.ssh/authorized_keys`.
+    - Create new key and specify output file: `ssh-keygen -f key`
+    - Copy `key.pub` to remote machine then append: `echo "ssh-rsa AAAAB...SNIP...M= user@parrot" >> /root/.ssh/authorized_keys`
+    - Login with private key: `ssh root@10.10.10.10 -i key`
+      
 ## Key Concepts
 - Linux systems & utility tools  
 - SSH  
@@ -241,4 +272,6 @@ Projects/
 - Using Metasploit for vulnerability assessment.
 - Shell access methods (reverse, bind, web shells)
 - Improving shell usability (TTY upgrades)
+- Privilege escalation through OS and kernel exploits
+- Exposing credentials and SSH keys
 
