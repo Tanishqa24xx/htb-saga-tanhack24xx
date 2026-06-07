@@ -47,3 +47,27 @@
 - Rapid7 Vulnerability Database  
 - metasploit-framework/modules/auxiliary/scanner/http/wp_simple_backup_file_read.rb at master · rapid7/metasploit-framework
 
+
+## Section 11 — Exercise
+
+### Q1 — Move to user2 and get the flag at `/home/user2/flag.txt`
+- SSH into the server using `ssh username@<ip> -p<port>`, then ran `sudo -l` to check current privileges.
+- Revealed that `/bin/bash` can be executed without a password for user2. Tried `sudo su -` to check if root was accessible — unsuccessful. user1 can't write to `/bin/bash`, so I needed to log in as user2 first to get further info.
+- Tried to gather OS info and searchsploited the Parrot version — nothing found. Checked write permissions on folders inside PATH. Followed the Checklist - Linux Privilege Escalation - HackTricks but too many unknowns. Nothing found after 1 hour.
+- Started fresh the next hour. Ruled out OS/kernel exploits, no scheduled tasks could be worked out. Shifted focus to the other parts of the lesson — exposed credentials and SSH keys.
+- Used `find` and `grep` to look for suspicious config or log files — found nothing. SSH keys were the last resort.
+- Found the public key file for user1 but the goal was to access user2. Used GTFOBins to understand what could be done from user1. Tried opening `/bin/bash` using the `bash -c` command but got a warning with too much noise.
+- Used `sudo -u user2 bash -c 'whoami'` to verify access — it replied as user2. Used the same approach with the flag location from the question and found the flag.
+
+### Q2 — Escalate privileges to root and get the flag at `/root/flag.txt`
+- Using `sudo` and `bash -c`, checked what files and permissions existed in root. Found two things:
+  1. `flag.txt` existed but had no read access for anyone other than root — needed to SSH in as root.
+  2. The `.ssh` directory was there, exactly as described in the notes.
+- Checked inside `.ssh` and found `id_rsa` containing the private key. Followed the flow from the notes — read the file using `cat`, copied the key, wrote it locally using `vim`, changed permissions with `chmod 600`, then logged out.
+- Logged back in as root using the private key: `ssh root@10.10.10.10 -i key`. Accessed `flag.txt` and the flag was found.
+- Took 2 hours in total.
+
+### Helper References
+- Checklist - Linux Privilege Escalation - HackTricks
+- GTFOBins
+
