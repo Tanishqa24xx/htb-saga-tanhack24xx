@@ -17,3 +17,7 @@
 - In the Public Exploit exercise, I was made to think critically and not just use things as they are given. I learnt how one thing can be used differently based on analysis. Approaches are different for every task. I was able to dig deep into web enumeration and learnt what to look for.
 - In the privilege escalation exercise, I learnt that nothing goes according to the book. I have to navigate smartly to find weaknesses and get the flag.
 - The `bash -c` command was new to me — it allowed me to read a file as an unprivileged user.
+- In web footprinting, I learnt that clues can come from unlikely places — the password `nibbles` was hiding in plain sight across multiple pages before I tried it.
+- No single scan gives the full picture. Different enumeration techniques reveal different pieces of information, and the real skill is chaining them together.
+- The file transfer step taught me that standard methods don't always work. When wget failed, I had to think about what alternatives were available and why each one applies in different scenarios.
+- In the privilege escalation stage, neither the HTB walkthrough nor the blog approach worked for me. Drawing on the previous exercise, I adapted the `sudo -u user bash -c '...'` technique and it worked — reinforcing that there is always a roundabout way. It doesn't have to be exactly what you're told or given.
