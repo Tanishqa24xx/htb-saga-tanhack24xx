@@ -105,3 +105,134 @@ sudo nmap 10.129.2.18 -sn -oA host -PE --packet-trace --disable-arp-ping
 ```
 
 ---
+
+### Default TTL Values
+| TTL | OS |
+|-----|----|
+| 64 | Linux / Unix / macOS |
+| 128 | Windows |
+| 254 | Cisco Devices |
+| 255 | Solaris / FreeBSD / OpenBSD |
+
+---
+
+### Host & Port States
+| State | Meaning |
+|-------|---------|
+| open | Connection established (TCP/UDP/SCTP) |
+| closed | RST flag received — port closed, host alive |
+| filtered | No response or error code — firewall likely dropping packets |
+| unfiltered | TCP-ACK scan only — accessible but open/closed undetermined |
+| open\|filtered | No response — firewall/packet filter may be protecting port |
+| closed\|filtered | IP ID idle scans only — cannot determine state |
+
+---
+
+### Discovering Open TCP Ports
+
+| Method | Flag | Notes |
+|--------|------|-------|
+| SYN scan | -sS | Default when run as root |
+| TCP scan | -sT | Default without root |
+| Specific ports | -p 22,25,80 | Define 1-by-1 |
+| Port range | -p 22-445 | By range |
+| Top ports | --top-ports=10 | Most common ports |
+| All ports | -p- | Full scan, all 65535 |
+| Fast scan | -F | Top 100 ports |
+
+```bash
+sudo nmap 10.129.2.28 --top-ports=10
+```
+
+---
+
+### Packet Tracing
+
+For a clear view of SYN scan — disable ICMP echo requests, DNS resolution, ARP ping:
+```bash
+sudo nmap 10.129.2.28 -p 21 --packet-trace -Pn -n --disable-arp-ping
+```
+
+**Request breakdown:**
+| Field | Meaning |
+|-------|---------|
+| SENT (0.0429s) | Nmap sends packet to target |
+| TCP | Protocol used |
+| 10.10.14.2:63090 | Our IPv4 addr and source port |
+| 10.129.2.28:21 | Target IPv4 addr and port |
+| S | SYN flag |
+| ttl=56 id=57322 iplen=44 | Additional TCP header params |
+
+**Response breakdown:**
+| Field | Meaning |
+|-------|---------|
+| RCVD (0.0573s) | Received packet from target |
+| 10.129.2.28:21 | Target IPv4 addr and source port |
+| 10.10.14.2:63090 | Our IPv4 addr and port replied to |
+| RA | RST + ACK flags |
+| ttl=64 id=0 iplen=40 | Additional TCP header params |
+
+---
+
+### Connect Scan vs SYN Scan
+
+**Connect Scan (-sT) — Full TCP 3-way handshake**
+- Least stealthy — creates logs on most systems, easily detected by IDS/IPS
+- Goal: accuracy — maps network cleanly without disrupting services
+```bash
+sudo nmap 10.129.2.28 -p 443 --packet-trace --disable-arp-ping -Pn -n --reason -sT
+```
+
+**SYN Scan (-sS) — Half-open scan**
+- More stealthy — does not complete full handshake
+- Minimises connection logs while gathering port info
+
+---
+
+### Filtered Ports
+- Packet dropped → no response → Nmap retries (default `--max-retries` = 10)
+- Firewall drops TCP packets → filtered → ICMP type 3, error code 3 → port unreachable
+- If host is alive but port filtered → strongly assume firewall is rejecting packets
+
+---
+
+### Discovering Open UDP Ports
+
+UDP = stateless protocol, no 3-way handshake, no acknowledgement.
+
+```bash
+sudo nmap 10.129.2.28 -F -sU
+sudo nmap 10.129.2.28 -sU -Pn -n --disable-arp-ping --packet-trace -p 137 --reason
+sudo nmap 10.129.2.28 -Pn -n --disable-arp-ping --packet-trace -p 445 --reason -sV
+```
+
+- Often no response — Nmap sends empty datagrams, cannot confirm delivery
+- UDP port open → response only if application configured to respond
+- ICMP response with error code 3 → port **unreachable** → closed
+
+---
+
+### Saving & Exporting Nmap Results
+
+| Flag | Extension | Format |
+|------|-----------|--------|
+| -oN | .nmap | Normal human-readable output |
+| -oG | .gnmap | Grepable output |
+| -oX | .xml | Machine-readable XML |
+| -oA | all three | Save in all formats simultaneously |
+
+```bash
+sudo nmap 10.129.2.28 -p- -oA target
+ls
+cat target.nmap
+cat target.gnmap
+cat target.xml
+```
+
+**Convert XML to HTML:**
+```bash
+xsltproc target.xml -o target.html
+```
+Open in browser for structured, readable representation.
+
+> Always save scan results with `-oA`. Scan data is evidence — critical for documentation, reporting, and recreating attack paths.
