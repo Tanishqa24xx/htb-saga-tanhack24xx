@@ -104,3 +104,37 @@ Always save scan results with `-oA`. Scan data is evidence — useful for docume
 
 ---
 
+## Section 6 — Service Enumeration Exercise
+
+### Exercise
+Enumerate all ports and services. One service contains the flag.
+
+### Process
+- Ran full port scan with version detection:
+```bash
+sudo nmap  -p- -sV
+```
+- Flag found embedded in service info field of scan output
+
+### Key Takeaway
+Always read full scan output carefully — flags and sensitive info can appear in service banners and version fields, not just open ports.
+
+---
+
+## Section 7 — NSE Vulnerability Script Exercise
+
+### Exercise
+Use NSE scripts to find the flag hidden in one of the services.
+
+### Process
+- Analysed Section 6 scan output — port 80 (HTTP) identified as highest probability target due to user-facing nature
+- Ran vulnerability category scripts against port 80:
+```bash
+sudo nmap  -p 80 -sV --script vuln
+```
+- Scan revealed existence of `robots.txt`
+- Visited `http://<ip>:80/robots.txt` in browser — flag printed directly
+
+### Key Takeaway
+`robots.txt` is a classic first stop — sites use it to tell search engines what not to index, which inadvertently reveals hidden paths and sensitive endpoints. Always check it during web enumeration.
+
