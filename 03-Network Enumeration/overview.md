@@ -236,3 +236,99 @@ xsltproc target.xml -o target.html
 Open in browser for structured, readable representation.
 
 > Always save scan results with `-oA`. Scan data is evidence — critical for documentation, reporting, and recreating attack paths.
+
+---
+
+### Service Version Detection
+
+Perform quick port scan first to reduce traffic, then enumerate versions:
+```bash
+sudo nmap 10.129.2.28 -p- -sV
+```
+
+| Technique | Command | Purpose |
+|-----------|---------|---------|
+| Check scan status | Press Space Bar | View progress mid-scan |
+| Status interval | --stats-every=5s | Print status every 5s (s=seconds, m=minutes) |
+| Verbosity | -v or -vv | Show open ports as detected in real time |
+
+```bash
+sudo nmap 10.129.2.28 -p- -sV --stats-every=5s
+sudo nmap 10.129.2.28 -p- -sV -v
+```
+
+---
+
+### Banner Grabbing
+
+- Automatic scans can miss info banners don't always expose version clearly
+- Banners sent at network level — identifiable via **PSH flag** in TCP header
+- Banner example: `220 inlane ESMTP Postfix (Ubuntu)` — reveals service and OS
+
+```bash
+sudo tcpdump -i eth0 host 10.10.14.2 and 10.129.2.28
+nc -nv 10.129.2.28 25
+```
+
+**TCP Handshake + Banner Flow:**
+| Flag | Direction | Meaning |
+|------|-----------|---------|
+| SYN | Client → Target | Initiate connection |
+| SYN-ACK | Target → Client | Connection acknowledged |
+| ACK | Client → Target | Confirm |
+| PSH-ACK | Target → Client | Target sending data (banner) |
+| ACK | Client → Target | Data received |
+
+---
+
+### Nmap Scripting Engine (NSE)
+
+Scripts written in Lua. 14 categories:
+
+| Category | Purpose |
+|----------|---------|
+| auth | Determine authentication credentials |
+| broadcast | Host discovery added to remaining scans |
+| brute | Brute-force login attempts |
+| default | Default scripts run with -sC |
+| discovery | Evaluate accessible services |
+| dos | Check services for DoS vulnerabilities (use sparingly) |
+| exploit | Exploit known vulnerabilities on scanned port |
+| external | Use external services for further processing |
+| fuzzer | Identify vulnerabilities via unexpected packet handling |
+| intrusive | Scripts that may negatively affect target |
+| malware | Check if malware affects target system |
+| safe | Defensive scripts — non-intrusive, non-destructive |
+| version | Extension for service detection |
+| vuln | Identify specific vulnerabilities |
+
+```bash
+# Run by category
+sudo nmap  --script 
+
+# Run specific scripts
+sudo nmap  --script ,
+
+# Example: SMTP enumeration with 2 scripts
+sudo nmap 10.129.2.28 -p 25 --script banner,smtp-commands
+```
+
+---
+
+### Aggressive Scan
+
+Performs service detection, OS detection, traceroute, and default scripts in one command:
+```bash
+sudo nmap 10.129.2.28 -p 80 -A
+```
+
+---
+
+### Vulnerability Assessment
+
+```bash
+sudo nmap 10.129.2.28 -p 80 -sV --script vuln
+```
+Runs all scripts from the `vuln` category against specified port.
+
+---
