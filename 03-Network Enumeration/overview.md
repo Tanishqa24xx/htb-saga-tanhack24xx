@@ -332,3 +332,136 @@ sudo nmap 10.129.2.28 -p 80 -sV --script vuln
 Runs all scripts from the `vuln` category against specified port.
 
 ---
+
+### Performance Optimization
+
+Tuning Nmap for extensive or low-bandwidth networks:
+
+#### 1. Timeouts (RTT)
+Round-Trip-Time (RTT) = time to receive response from scanned port.
+
+```bash
+# Default scan
+sudo nmap 10.129.2.0/24 -F
+
+# Optimized RTT
+sudo nmap 10.129.2.0/24 -F --initial-rtt-timeout 50ms --max-rtt-timeout 100ms
+```
+> Too short an initial RTT timeout = missed hosts. Trade speed carefully.
+
+#### 2. Max Retries
+```bash
+# Default
+sudo nmap 10.129.2.0/24 -F | grep "/tcp" | wc -l
+
+# Reduced retries
+sudo nmap 10.129.2.0/24 -F --max-retries 0 | grep "/tcp" | wc -l
+```
+> Accelerating scans may overlook important open ports.
+
+#### 3. Rates
+```bash
+# Default
+sudo nmap 10.129.2.0/24 -F -oN tnet.default
+
+# Minimum rate (packets per second)
+sudo nmap 10.129.2.0/24 -F -oN tnet.minrate300 --min-rate 300
+```
+
+#### 4. Timing Templates
+| Flag | Name | Use Case |
+|------|------|----------|
+| -T 0 | Paranoid | Extremely slow, IDS evasion |
+| -T 1 | Sneaky | Slow, IDS evasion |
+| -T 2 | Polite | Slower, less bandwidth |
+| -T 3 | Normal | Default |
+| -T 4 | Aggressive | Fast networks |
+| -T 5 | Insane | Fastest, may miss results |
+
+```bash
+sudo nmap 10.129.2.0/24 -F -oN tnet.T5 -T 5
+```
+
+---
+
+### Firewalls vs IDS/IPS
+
+**Firewall** — monitors traffic, handles connections based on rules. Drops, passes, or blocks packets.
+
+**IDS** — scans network for potential attacks, analyzes and reports.
+
+**IPS** — complements IDS, takes defensive measures automatically on detection. Pattern matching and signature-based.
+
+#### Packet Responses
+| Response | Meaning |
+|----------|---------|
+| No response | Packet dropped — ignored by firewall |
+| RST flag | Packet rejected — explicit refusal |
+| ICMP error | Various: Net/Host Unreachable, Port Unreachable, Prohibited |
+
+---
+
+### Bypassing Firewalls
+
+#### TCP ACK Scan (-sA)
+Harder for firewalls and IDS/IPS to filter than SYN or Connect scans.
+- Firewall cannot determine if ACK packet originated externally or internally
+- SYN packets from external networks are usually blocked; ACK packets often pass
+
+```bash
+# SYN Scan (detectable)
+sudo nmap 10.129.2.28 -p 21,22,25 -sS -Pn -n --disable-arp-ping --packet-trace
+
+# ACK Scan (harder to detect)
+sudo nmap 10.129.2.28 -p 21,22,25 -sA -Pn -n --disable-arp-ping --packet-trace
+```
+
+---
+
+### Detecting IDS/IPS
+
+- Use multiple Virtual Private Servers (VPS) with different IPs
+- If first IP gets blocked → IPS is active on target network
+- Confirms security monitoring in place before proceeding
+
+---
+
+### Decoy Scanning (-D)
+
+Nmap generates random IP addresses to disguise packet origin.
+
+```bash
+# Generate 5 random decoy IPs
+sudo nmap 10.129.2.28 -p 80 -sS -Pn -n --disable-arp-ping --packet-trace -D RND:5
+
+# Test firewall rules
+sudo nmap 10.129.2.28 -n -Pn -p445 -O
+
+# Scan using different source IP
+sudo nmap 10.129.2.28 -n -Pn -p 445 -O -S 10.129.2.200 -e tun0
+```
+
+---
+
+### DNS Proxying
+
+Specify custom DNS servers or use TCP port 53 as source port to bypass firewall rules.
+
+**Why it works:** Admins often trust port 53 traffic — firewall/IDS may not filter it properly, allowing packets through.
+
+```bash
+# SYN scan — port filtered
+sudo nmap 10.129.2.28 -p50000 -sS -Pn -n --disable-arp-ping --packet-trace
+
+# SYN scan from DNS port 53 — port opens
+sudo nmap 10.129.2.28 -p50000 -sS -Pn -n --disable-arp-ping --packet-trace --source-port 53
+
+# Connect via Netcat using source port 53
+ncat -nv --source-port 53 10.129.2.28 50000
+
+# Alternative with source IP specified
+sudo ncat -s  -p 53 10.129.2.28 50000
+```
+
+---
+
