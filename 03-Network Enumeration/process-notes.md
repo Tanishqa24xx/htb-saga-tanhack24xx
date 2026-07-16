@@ -138,3 +138,81 @@ sudo nmap  -p 80 -sV --script vuln
 ### Key Takeaway
 `robots.txt` is a classic first stop — sites use it to tell search engines what not to index, which inadvertently reveals hidden paths and sensitive endpoints. Always check it during web enumeration.
 
+---
+
+## Section 10 — OS Detection (Stealth Required)
+
+### Exercise
+Identify the operating system of the target. Submit OS name.
+
+### Process
+- Ran comprehensive scan:
+```bash
+sudo nmap 10.129.96.157 -sS -sV -sC -Pn -n --disable-arp-ping
+```
+- Found **Ubuntu** server via open port 22 (SSH banner)
+- Triggered IDS alert — banned for 3 minutes
+- Key lesson: standard scans are loud — IDS/IPS detected immediately
+
+### Key Takeaway
+When stealth is required, avoid `-sC` (runs intrusive scripts) and `-sV` (generates extra traffic). Use decoys (`-D RND:5`) or timing flags (`-T 1`) to reduce detection footprint.
+
+---
+
+## Section 11 — DNS Server Version (Silent UDP Scan)
+
+### Exercise
+Find the DNS server version of the target. Submit as answer.
+
+### Process
+- Targeted UDP port 53 (DNS) with silent scan:
+```bash
+sudo nmap 10.129.98.111 -sU -Pn -p 53 -n --disable-arp-ping
+```
+- Confirmed port open
+- Added `-sV` for version detection — flag returned directly:
+```bash
+sudo nmap 10.129.98.111 -sU -Pn -p 53 -n --disable-arp-ping -sV
+```
+
+### Key Takeaway
+DNS runs on UDP port 53 by default. Always target UDP specifically with `-sU` — it won't appear in TCP scans.
+
+---
+
+## Section 12 — Firewall Bypass via DNS Proxying
+
+### Exercise
+Find the version of a service hidden behind a firewall. Submit flag.
+
+### Process
+- Initial SYN scan revealed ports 22 (SSH) and 80 (HTTP):
+```bash
+sudo nmap 10.129.98.122 -sS -Pn -n --disable-arp-ping
+```
+- TCP scan produced same results — nothing new
+- UDP scan revealed ports 68, 137, 138 — not the target
+- Suspected firewall filtering — tried DNS proxy method:
+```bash
+# Scan all ports using source port 53
+sudo nmap 10.129.98.122 -sS -Pn -n --disable-arp-ping --source-port 53
+```
+- Revealed hidden filtered port **50000** — service: `ibm-db2` (database service)
+- Confirmed port open via targeted scan:
+```bash
+sudo nmap 10.129.98.122 -p50000 -sS -Pn -n --disable-arp-ping --source-port 53
+```
+- Attempted Netcat connection — failed initially:
+```bash
+ncat -nv --source-port 53 10.129.98.122 50000  # failed
+sudo ncat -nv --source-port 53 10.129.98.122 50000  # still failed
+```
+- Found fix via cheatsheet — must specify source IP explicitly:
+```bash
+sudo ncat -s  -p 53 10.129.98.122 50000
+```
+- Flag returned directly in connection banner
+
+### Key Takeaway
+When ports appear filtered, try `--source-port 53` — firewalls often trust DNS traffic. If Netcat fails without sudo or without `-s`, always specify your tun0 interface IP explicitly using `-s`. The source IP matters, not just the source port.
+
