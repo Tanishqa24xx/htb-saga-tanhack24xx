@@ -77,6 +77,6 @@ Everything documented here was completed in authorized lab environments on HackT
 Final-year Cybersecurity & Digital Systems Security student, University of Wollongong (via SIM Singapore)
 [https://www.linkedin.com/in/tanishqa-akude]
  
-*Currently looking for penetration testing / offensive security internship and/or entry-level opportunities in Singapore.*
+*Currently looking for penetration testing / offensive security internship and entry-level opportunities in Singapore.*
 
 
