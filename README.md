@@ -47,8 +47,8 @@ Screenshots of successful completions are included as proof of work — not step
 | Track | Status |
 |---|---|
 | **Pentester Path** | Module 2 ✅ &nbsp; Module 3 ✅ &nbsp; Module 4 🔄 in progress |
-| **Machines** | Ongoing — starter boxes tracked in aggregate, technique-heavy boxes get full writeups |
-| **Challenges** | Not yet started |
+| **Machines** | 2 Very Easy completed — Meow, Fawn |
+| **Challenges** | 1 Very Easy completed — Flag Command |
 | **Sherlocks** | Not yet started |
 | **Pro Labs** | Not yet started |
 | **Fortresses** | Not yet started |
